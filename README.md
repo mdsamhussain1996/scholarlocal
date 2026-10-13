@@ -127,3 +127,16 @@ pytest tests/
 
 ## 🔒 Privacy & Grounding Guarantee
 ScholarLocal runs completely offline. All document processing, vector embeddings, and mathematical reasoning occur on your local device. The arXiv network feature is disabled by default and strictly isolated.
+
+---
+
+## 👨‍🏫 Author & Academic Affiliation
+
+**Dr. Md Samshad Hussain Ansari**  
+Assistant Professor of Mathematics, Newton School of Technology, ADYPU, Pune  
+Ph.D. in Mathematics, Indian Institute of Technology Mandi (2025)  
+- 🌐 Academic Portfolio: [https://mdsamhussain1996.github.io/](https://mdsamhussain1996.github.io/)  
+- 📚 Google Scholar: [Md Samshad Ansari](https://scholar.google.com/citations?user=3b2jd4EAAAAJ)  
+- 🔬 ResearchGate: [Md-Samshad-Ansari](https://www.researchgate.net/profile/Md-Samshad-Ansari)  
+- 💻 GitHub: [@mdsamhussain1996](https://github.com/mdsamhussain1996)
+

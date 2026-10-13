@@ -54,6 +54,7 @@ if "last_retrieved_passages" not in st.session_state:
 with st.sidebar:
     st.title("📚 ScholarLocal")
     st.caption("Private, 100% Offline Research Assistant")
+    st.markdown("By [Dr. Md Samshad Hussain Ansari](https://mdsamhussain1996.github.io/) · [Portfolio ↗](https://mdsamhussain1996.github.io/)")
     
     is_online = client.is_online()
     if is_online:
@@ -85,6 +86,13 @@ with st.sidebar:
             st.session_state.active_pdf = paper_names[chosen_title]
     else:
         st.info("No papers indexed yet.")
+
+    st.markdown("---")
+    st.markdown(
+        "🔬 **Dr. Md Samshad Hussain Ansari**  \n"
+        "Assistant Professor of Mathematics  \n"
+        "🌐 [mdsamhussain1996.github.io](https://mdsamhussain1996.github.io/)"
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 1: ASK (Interactive Research Chat + PDF Viewer)
