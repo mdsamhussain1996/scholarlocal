@@ -1,0 +1,45 @@
+library_dir: "library"
+bib_files:
+  - "library/references.bib"
+data_dir: "data"
+
+hardware_tier: "small"  # small, medium, large
+
+models:
+  tier_models:
+    small: "llama3.2:1b"
+    medium: "qwen2.5:7b"
+    large: "qwen2.5:14b"
+  chat_model: "llama3.2:1b"
+  embedding_model: "nomic-embed-text"
+  ollama_host: "http://localhost:11434"
+  timeout_seconds: 60
+  max_retries: 2
+
+ingest:
+  chunk_size_tokens: 650
+  chunk_overlap_tokens: 100
+  use_math_ocr: false  # marker-pdf or nougat for math-heavy PDFs
+  fuzzy_match_threshold: 80.0
+
+retrieval:
+  top_k_vector: 15
+  top_k_bm25: 15
+  top_k_final: 8
+  hybrid_rrf_k: 60
+  use_reranker: false
+
+agent:
+  max_steps: 6
+  fallback_to_pipeline_on_error: true
+
+arxiv:
+  enabled: false  # Strictly false by default; no document content leaves machine
+  categories:
+    - "math.OC"
+    - "math.DS"
+    - "cs.NE"
+  keywords:
+    - "fractional calculus"
+    - "synchronization"
+    - "controllability"

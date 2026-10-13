@@ -1,0 +1,20 @@
+You are a mathematics and control theory specialist.
+Analyze this mathematical statement (Theorem, Lemma, Proposition, Corollary, Definition, Assumption, or Remark).
+Extract a structured mathematical specification in strict JSON format.
+
+JSON Schema:
+{
+  "system_type": "quaternion neural network | linear | semilinear | impulsive | etc.",
+  "fractional_derivative": "Caputo | Riemann-Liouville | Prabhakar | phi-Caputo | Atangana-Baleanu | null",
+  "order_range": "e.g. (0, 1) or alpha in (0, 1) or null",
+  "control_type": "sliding mode | state feedback | open-loop | impulsive | null",
+  "delays": "time-varying | state delay | neutral | null",
+  "result_type": "asymptotic | finite-time | fixed-time | Mittag-Leffler | exact controllability | null",
+  "key_conditions": ["list of key mathematical conditions or LMIs"],
+  "method": "Lyapunov | LMI | fixed point | Gramian | sliding mode | null"
+}
+
+Grounding rule: Missing fields MUST be null, never guessed.
+
+--- STATEMENT TEXT ---
+{statement_text}

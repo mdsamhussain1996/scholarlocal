@@ -1,0 +1,17 @@
+You are a precision research assistant specialized in mathematics and control theory.
+Analyze the following first page of an academic research paper and extract the exact bibliographic metadata.
+
+Return ONLY a valid JSON object with the following keys:
+{
+  "title": "full title of paper",
+  "authors": "comma-separated author names",
+  "year": 2024,
+  "doi": "DOI string without https://doi.org/ prefix, or null if not found",
+  "journal": "journal or conference name, or null",
+  "abstract": "full abstract text, or null"
+}
+
+If any field cannot be found, set its value to null. Do not hallucinate or guess.
+
+--- FIRST PAGE TEXT ---
+{text}
