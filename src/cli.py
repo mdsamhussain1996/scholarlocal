@@ -12,6 +12,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from src.config import load_config
+from src.index.bm25_store import BM25Store
+from src.index.hybrid import HybridRetriever
 from src.index.vector_store import VectorStore
 from src.ingest.chunker import chunk_document
 from src.ingest.metadata import extract_metadata_from_text, match_bibtex, parse_bib_files
@@ -227,10 +229,24 @@ def index_cmd(
         )
         processed_count += 1
 
+    # 3. Build & save BM25 keyword index on all chunks
+    all_chunks = db.get_all_chunks()
+    papers_dict = {p["id"]: p for p in db.list_papers()}
+    for c in all_chunks:
+        p = papers_dict.get(c["paper_id"], {})
+        c["cite_key"] = p.get("cite_key", "")
+        c["year"] = p.get("year")
+        c["title"] = p.get("title", "")
+        c["authors"] = p.get("authors", "")
+
+    bm25_store = BM25Store(os.path.join(cfg.data_dir, "bm25_index.pkl"))
+    bm25_store.build_index(all_chunks)
+
     console.print(table)
     console.print(
         f"[bold green]Ingestion complete![/bold green] "
-        f"Processed: {processed_count}, Unchanged: {skipped_count}, Total in index: {vstore.count()} chunks."
+        f"Processed: {processed_count}, Unchanged: {skipped_count}, "
+        f"Total in vector index: {vstore.count()} chunks, BM25 corpus: {len(all_chunks)} chunks."
     )
 
 
@@ -238,9 +254,13 @@ def index_cmd(
 def search_cmd(
     query: str = typer.Argument(..., help="Search query string"),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to return"),
+    mode: str = typer.Option("hybrid", "--mode", "-m", help="Search mode: hybrid, vector, or bm25"),
+    paper: Optional[str] = typer.Option(None, "--paper", "-p", help="Filter by paper ID or cite_key"),
+    year_min: Optional[int] = typer.Option(None, "--year-min", help="Minimum publication year"),
+    year_max: Optional[int] = typer.Option(None, "--year-max", help="Maximum publication year"),
     config_path: str = "config.yaml",
 ):
-    """Perform plain vector search on indexed mathematics papers."""
+    """Perform hybrid (BM25 + vector RRF) or plain search with page-accurate citations."""
     cfg = load_config(config_path)
     client = OllamaClient(
         host=cfg.models.ollama_host,
@@ -251,26 +271,50 @@ def search_cmd(
         persist_dir=os.path.join(cfg.data_dir, "chroma"),
         ollama_client=client,
     )
+    bm25 = BM25Store(persist_path=os.path.join(cfg.data_dir, "bm25_index.pkl"))
+    db = Database(os.path.join(cfg.data_dir, "scholar.db"))
 
-    console.print(f"[bold cyan]Query:[/bold cyan] '{query}' (top {top_k} results)")
-    results = vstore.similarity_search(query=query, top_k=top_k)
+    retriever = HybridRetriever(vector_store=vstore, bm25_store=bm25, db=db, config=cfg)
+
+    # Build filters
+    filters: dict[str, Any] = {}
+    if paper:
+        # Check if paper matches paper_id or cite_key
+        filters["paper_id"] = paper
+    if year_min:
+        filters["year_min"] = year_min
+    if year_max:
+        filters["year_max"] = year_max
+
+    mode_label = mode.upper()
+    filter_str = f" [filters: {filters}]" if filters else ""
+    console.print(f"[bold cyan]Query ({mode_label}):[/bold cyan] '{query}' (top {top_k}){filter_str}")
+
+    results = retriever.search(query=query, top_k=top_k, filters=filters, mode=mode.lower())
 
     if not results:
-        console.print("[yellow]No matching passages found. Have you indexed the library using 'scholar index'?[/yellow]")
+        console.print("[yellow]No matching passages found for this query/filter.[/yellow]")
         return
 
     for idx, match in enumerate(results, start=1):
-        score = match["score"]
+        citation = match.get("citation") or "[Unknown]"
         cite_key = match.get("cite_key") or "unknown"
         title = match.get("title") or match.get("paper_id")
-        start_p = match.get("start_page", 1)
-        end_p = match.get("end_page", 1)
         sec = match.get("section_title", "General")
-        page_str = f"p. {start_p}" if start_p == end_p else f"pp. {start_p}–{end_p}"
-        citation_tag = escape(f"[{cite_key}, {page_str}]")
         escaped_sec = escape(sec[:40])
 
-        header = f"#{idx} | {citation_tag} | Similarity: {score:.4f} | Section: {escaped_sec}"
+        score_info = ""
+        if mode == "hybrid":
+            rrf = match.get("rrf_score", 0.0)
+            vr = match.get("vector_rank")
+            br = match.get("bm25_rank")
+            score_info = f"RRF: {rrf:.5f} (Vec Rank: {vr or '—'}, BM25 Rank: {br or '—'})"
+        elif mode == "vector":
+            score_info = f"Vector Cosine Sim: {match.get('score', 0.0):.4f}"
+        elif mode == "bm25":
+            score_info = f"BM25 Score: {match.get('bm25_score', 0.0):.4f}"
+
+        header = f"#{idx} | {escape(citation)} | {escape(cite_key)} | {score_info} | Sec: {escaped_sec}"
         console.print(Panel(
             f"[bold white]{escape(title)}[/bold white]\n\n"
             f"{escape(match['text'])}",
